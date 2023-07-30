@@ -1,0 +1,105 @@
+val currentDateTime = Instant.now
+val zone = ZoneId.of("+05:30")  // ist 
+var dateTimePattern = "yyyy-MM-dd HH:mm:ss"
+var dateTimeFormatter = DateTimeFormatter.ofPattern(dateTimePattern)
+var currentDateTimeIst=dateTimeFormatter.format(currentDateTime.atZone(zone))
+var DateTimeIstold=dateTimeFormatter.format(currentDateTime.atZone(zone).minusDays(6))
+var start_data =currentDateTimeIst.split(" ")
+var old_date =DateTimeIstold.split(" ")
+var stdate= old(0)+ " 00:00:00"
+var enddate= start_data(0)+" "+start_data(1)
+var calcdate = old(0)
+var calcdateend = st(0)
+
+Or
+
+dbutils.widgets.text("Start DateTime", "")
+dbutils.widgets.text("End DateTime", "")
+val widgetstartDateTime=dbutils.widgets.get("Start DateTime")
+val widgetendDateTime=dbutils.widgets.get("End DateTime")
+
+val fileNameTimeBack= Instant.now.minus(6, ChronoUnit.DAYS)
+ 
+val timezoneeee = ZoneId.of("Asia/Kolkata") 
+var DatePattern = "yyyy-MM-dd HH:mm:ss.SSS"
+var DateFormatter = DateTimeFormatter.ofPattern(DatePattern)
+var DateTimeCurrentIST= DateFormatter.format(timezoneeee.atZone(fileNameZone))
+var NameTimeBackIST= fileNameDateFormatter.format(fileNameTimeBack.atZone(fileNameZone))
+ 
+ 
+var querystartTime=""
+var queryendTime=""
+var fileTime=""
+var fileDate=""
+var widgetfileTimeArray=""
+var widgetfileDateArray=""
+var fileDateArray=""
+var fileDateEmail=""
+var fileTimeEmail=""
+var datePartCurrent=dateTimeCurrentIST.split(" ")
+var datePartBack=TimeBackIST.split(" ")
+var timeFormat=""
+if(widgetstartDateTime=="" && widgetendDateTime=="")
+{
+if(datePartCurrent(1)>"08:30:00.000" && datePartCurrent(1)<"09:30:000.000")
+{
+   querystartDtTime=datePartBack(0)+" 09:00:000.000"
+ queryendDtTime=datePartCurrent(0)+" 09:00:000.000"
+  fileTime="09-00"
+  fileTimeEmail="09-00 AM"
+ var datePartCurrent1=datePartCurrent(0)
+  var datePartCurrent2=datePartCurrent1.split("-")
+  
+  fileDate=datePartCurrent2(2)+datePartCurrent2(1)+datePartCurrent2(0)
+  fileDateEmail=datePartCurrent2(2)+"/"+datePartCurrent2(1)+"/"+datePartCurrent2(0)
+}
+else if(datePartCurrent(1)>"11:30:00.000" && datePartCurrent(1)<"12:30:00.000")
+{
+  querystartDtTime=datePartBack(0)+" 12:00:00.000"
+  queryendDtTime=datePartCurrent(0)+" 12:00:00.000"
+ // fileTimeMail="12 PM"
+  fileTime="12-00"
+  fileTimeEmail="12-00 PM"
+  var datePartCurrent1=datePartCurrent(0)
+  var datePartCurrent2=datePartCurrent1.split("-")
+  
+ 
+  fileDate=datePartCurrent2(2)+datePartCurrent2(1)+datePartCurrent2(0)
+   fileDateEmail=datePartCurrent2(2)+"/"+datePartCurrent2(1)+"/"+datePartCurrent2(0)
+}
+
+
+  
+}
+else if(datePartCurrent(1)>"20:30:00.000" && datePartCurrent(1)<"21:30:00.000")
+{
+  querystartDtTime=datePartBack(0)+" 21:00:00.000"
+  queryendDtTime=datePartCurrent(0)+" 21:00:00.000"
+  fileTime="21-00"
+  fileTimeEmail="09-00 PM"
+  var datePartCurrent1=datePartCurrent(0)
+  var datePartCurrent2=datePartCurrent1.split("-")
+  
+ 
+  fileDate=datePartCurrent2(2)+datePartCurrent2(1)+datePartCurrent2(0)
+   fileDateEmail=datePartCurrent2(2)+"/"+datePartCurrent2(1)+"/"+datePartCurrent2(0)
+}
+{
+if(widgetstartDateTime!="" && widgetendDateTime!="")
+{
+  querystartDtTime=widgetstartDateTime
+  queryendDtTime=widgetendDateTime
+ var widgetfileDateTimeArray=queryendDtTime.split(" ")
+  fileTime=widgetfileDateTimeArray(1).substring(0,5).replace(":","-")
+ 
+ var widgetfileDateArray=widgetfileDateTimeArray(0)
+  var widgetfileDateArray1=widgetfileDateArray.split("-")
+ fileDate=widgetfileDateArray1(2)+widgetfileDateArray1(1)+widgetfileDateArray1(0)
+   fileDateEmail=widgetfileDateArray1(2)+"/"+widgetfileDateArray1(1)+"/"+widgetfileDateArray1(0)
+ 
+  if(fileTime.replace("-",":")>="00:00" && fileTime.replace("-",":")<="11:59")
+  
+    timeFormat="AM"
+  else
+   timeFormat="PM"
+  
