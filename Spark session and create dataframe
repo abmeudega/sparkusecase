@@ -1,0 +1,97 @@
+/*there is two ways to set up the connection */ 
+/*1.  setting up the connection properties without storing into varible so we have to call the spark.sql and temparory view evrery time 
+/* 2. store connection properties into some varible and make a temparory view on the varible */
+
+
+/*In Databricks, you don't need to create a SparkSession explicitly since it is already available as part of the Databricks runtime environment. Databricks automatically sets up a SparkSession named "spark" for you to use in your notebooks and jobs. The "spark" object is an instance of the org.apache.spark.sql.SparkSession class, which provides entry points for working with structured data and executing SQL queries on Databricks.
+Here's how you can access and use the SparkSession in a Databricks notebook:
+Accessing SparkSession:
+The SparkSession is already available as "spark" in your Databricks notebook, and you can start using it directly. There's no need to create a new instance.
+Using SparkSession:
+You can use "spark" to read data from various data sources, execute SQL queries, and perform various Spark operations.*/
+
+outside the databrick we can create like
+
+   val spark: SparkSession = SparkSession
+  .builder()
+  .appName("MySparkApplication") // Set a name for your Spark application
+  .master("local[*]") // Set the Spark master URL (use "local[*]" for local testing)
+  .getOrCreate()
+
+
+//appName:
+The "appName" is a user-defined name for your Spark application. It is a human-readable name that helps you identify your application when monitoring Spark jobs in a cluster or Spark UI. It is useful for distinguishing between different applications running on the same Spark cluster. For example, you can set it to something like "MySparkApp" or "DataProcessingJob." The "appName" does not affect the functionality of your application; it is purely for identification purposes.          
+//
+ master : master:
+The "master" parameter specifies the URL of the cluster manager that Spark should connect to. The cluster manager is responsible for allocating resources to your Spark application. The "master" parameter determines whether your Spark application runs in local mode, on a standalone Spark cluster, on YARN, or other cluster managers like Mesos. The value you set for "master" dictates how Spark will be executed:
+                    
+"local[*]": Runs Spark in local mode, utilizing all available cores on your local machine. The * indicates that Spark should use all available cores.
+"local[n]": Runs Spark in local mode, utilizing n number of cores on your local machine.
+"yarn": Connects Spark to a YARN cluster manager. YARN manages cluster resources and scheduling.
+"spark://host:port": Connects Spark to a standalone Spark cluster running at the specified host and port.
+"mesos://host:port": Connects Spark to a Mesos cluster manager running at the specified host and port.
+The choice of the "master" parameter depends on your specific environment and how you want to deploy and manage your Spark application.
+In the above example, we are creating a SparkSession with the name "MySparkApplication" and running it in local mode using all available cores on the machine. This is often used for development and testing on a local machine.
+In a production environment or when deploying to a cluster, you would specify the appropriate "master" URL corresponding to the cluster manager you are using.
+
+
+
+                      Setting up connection methord 1
+val jdbcUsername = dbutils.secrets.get(scope = "zzz", key = "passwordkey") 
+val jdbcPassword = dbutils.secrets.get(scope = "zzz", key = "passwordkey")
+val jdbcHostname = "url.hostmame"
+val jdbcPort = 10001
+val jdbcDatabase = "officedatabase"
+ 
+// Create the JDBC URL without passing in the user and password parameters.
+val jdbcUrl = s"jdbc:sqlserver://${jdbcHostname}:${jdbcPort};database=${jdbcDatabase}"
+ 
+// Create a Properties() object to hold the parameters.
+ 
+val connectionProperties = new Properties()
+connectionProperties.put("user", s"${jdbcUsername}")
+connectionProperties.put("password", s"${jdbcPassword}")
+
+//Setting up the driver class to linked the Sql 
+                        
+val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+connectionProperties.setProperty("Driver", driverClass)
+
+// reading form the database and creating the dataframe on top of it 
+
+val students=spark.read.jdbc(jdbcUrl,"dbo.studenttable",connectionProperties).where("classnumber in ('4','5')")
+students.createOrReplaceTempView("students")
+
+// we need to use spark.sql everytime if we need to create a temp value on the result 
+val dataframe=spark.sql("""select  * from students""")
+dataframe.createOrReplaceTempView("dataframe")
+
+                        
+                        Methord 2 
+
+store the above connection properties in one varible and use as a lambda function 
+
+val featchAndCreateTempViewFor = (table: String)  => {
+  val connectiondata = spark.read.jdbc(url=jdbcUrl, table=table, properties=connectionProperties)
+  connectiondata.createOrReplaceTempView(table)
+}
+ 
+val querySqlTable = (query: String)  => {
+  spark.read.format("jdbc")
+    .option("url",jdbcUrl)
+    .option("driver","com.microsoft.sqlserver.jdbc.SQLServerDriver")
+    .option("query", query)
+    .option("user", username)
+    .option("password", password).load()
+}
+  
+//now we can query directly by using sql statment without defing the dataframw which connect the properties 
+val montlyquery = """SELECT * FROM dbo.salary"""
+val monthlyDF = querySqlTable(montlyquery)
+monthlyDF.createOrReplaceTempView("monthly_v")
+
+
+
+
+
+      
