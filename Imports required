@@ -22,5 +22,6 @@ import java.util.{Calendar, Date, TimeZone, Properties}
 import java.time._
 import java.time.temporal.ChronoUnit;
 import java.util.Date
+spark.conf.set("spark.sql.jsonGenerator.ignoreNullFields", false)
 
 
