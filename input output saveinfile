@@ -1,0 +1,98 @@
+val jdbcUsername = dbutils.secrets.get(scope = "xyz", key = "ds") 
+val jdbcPassword = dbutils.secrets.get(scope = "xyz", key = "ds")
+val jdbcHostname = "containers.database.windows.net"
+val jdbcPort = 1433
+val jdbcDatabase = "xyz"
+ 
+// Create the JDBC URL without passing in the user and password parameters.
+val jdbcUrl = s"jdbc:sqlserver://${jdbcHostname}:${jdbcPort};database=${jdbcDatabase}"
+ 
+// Create a Properties() object to hold the parameters.
+ 
+val connectionProperties = new Properties()
+ 
+connectionProperties.put("user", s"${jdbcUsername}")
+connectionProperties.put("password", s"${jdbcPassword}")
+
+val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+connectionProperties.setProperty("Driver", driverClass)
+
+
+
+spark.conf.set(
+"fs.azure.account.key.comtaimers.blob.core.windows.net",
+"gRb998989989898989898989898988989889898")
+
+
+val filedyanamically = "wasbs://sapbisftpserver@mcomtainmblob.core.windows.net/shared/input/"+yearCurrentDateTime+"/"+monthCurrentDateTime+"/"+PreviousCurrentDateTime+"/*.csv"
+
+
+val filedyanamicallys = spark.read
+  .option("header", "true")
+  .option("inferSchema", "true")
+  .format("com.databricks.spark.csv")
+  .load(filedyanamically)
+
+
+val mmmm=spark.read.jdbc(jdbcUrl,"dbo.database",connectionProperties).where("saasa='Completed' and saaa = 'Active'")
+mmm.createOrReplaceTempView("mmm")
+
+
+### file write
+
+val outputPath="wasbs://dailyextract@container.blob.core.windows.net/xxxx/"
+val folderName="Archive/"
+val fullPath=outputPath+folderName
+val fileName="dsdssd_"+Filedate
+ 
+dbutils.fs.rm(fullPath,true)
+Result.coalesce(1).write.format("csv").option("header","true").option("delimiter", ",").mode("overwrite").save(fullPath)
+ 
+var fileNames :List[String]=dbutils.fs.ls(fullPath).map(_.name).toList
+//var attachmentFileName=fileName+"_"+generateRandomNumber().toString()
+for (name <- fileNames)
+{
+  if(name.contains("part-"))
+  {
+    dbutils.fs.mv(fullPath+name,fullPath+fileName+".csv") 
+  }
+}
+var fileNamesUpdated :List[String]=dbutils.fs.ls(fullPath).map(_.name).toList
+for (name1 <- fileNamesUpdated)
+{
+  if(name1.contains(fileName))
+  {
+    dbutils.fs.cp(fullPath+name1,outputPath)
+  }
+}
+dbutils.fs.rm(fullPath,true)
+
+
+
+
+val emailToYellowMessangerUrl = "https://urdschin....in/api/engagements/notifications/v2/push?bot=dssd999999"
+val attachmentUrl = s"https://container.blob.core.windows.net/daily/$fileName"+".csv"
+ 
+val postData = s"""{
+        "userDetails": {
+            "email": "sadd"},
+        "notification": {
+            "subject": "$subjectText",
+            "type": "email",
+            "freeTextContent": " wite your mail and underlaying",
+            "sender": "noreply@dsdsdds.in",
+            "attachments": "$attachmentUrl"
+        },
+        "config": {
+            "checkOptIn": false
+        },
+        "bot": "9999999"
+    }"""
+ 
+ 
+import scalaj.http.{Http, HttpOptions}
+ 
+val response = Http(emailToYellowMessangerUrl).postData(postData)
+ .header("Content-Type", "application/json")
+ .header("x-auth-token", "d99889898988888988899888888888")
+ .option(HttpOptions.readTimeout(10000)).asString
