@@ -1,0 +1,133 @@
+sudo pip install boto3
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, sum as _sum, from_json, collect_list
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+# Initialize Spark session
+spark = SparkSession.builder \
+    .appName("KinesisToS3") \
+    .getOrCreate()
+
+# Define schema for the data
+schema = StructType([
+    StructField("transactionId", StringType(), True),
+    StructField("product", StringType(), True),
+    StructField("quantity", IntegerType(), True),
+    StructField("customerName", StringType(), True),
+    StructField("modeOfPayment", StringType(), True)
+])
+
+kinesis_stream_name = "your_kinesis_stream_name"
+region_name = "your_aws_region"
+
+kinesis_df = spark \
+    .readStream \
+    .format("kinesis") \
+    .option("streamName", kinesis_stream_name) \
+    .option("region", region_name) \
+    .option("initialPosition", "LATEST") \
+    .load()
+
+# Parse JSON data and filter null transactionId
+kinesis_parsed_df = kinesis_df \
+    .selectExpr("CAST(data AS STRING) as jsonData") \
+    .select(from_json(col("jsonData"), schema).alias("data")) \
+    .select("data.*") \
+    .filter(col("transactionId").isNotNull())
+
+# Aggregation
+aggregated_df = kinesis_parsed_df.groupBy("transactionId", "customerName", "modeOfPayment") \
+    .agg(
+        _sum("quantity").alias("totalQuantity"),
+        collect_list("product").alias("products")
+    )
+
+# Define the S3 Path
+s3_path = "s3://your_bucket_name/your_path/"
+
+# Write Stream to S3
+query = aggregated_df.writeStream \
+    .outputMode("append") \
+    .format("parquet") \
+    .option("path", s3_path) \
+    .option("checkpointLocation", "/path/to/checkpoint/dir") \
+    .start()
+
+query.awaitTermination()
+
+
+
+
+
+
+import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kinesis.FlinkKinesisConsumer;
+import org.apache.flink.streaming.connectors.kinesis.FlinkKinesisProducer;
+import org.apache.flink.streaming.util.serialization.JSONKeyValueDeserializationSchema;
+
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.api.common.functions.AggregateFunction;
+
+public class KinesisToS3 {
+    public static void main(String[] args) throws Exception {
+        final ParameterTool parameterTool = ParameterTool.fromArgs(args);
+
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        env.getConfig().setGlobalJobParameters(parameterTool);
+
+        DataStream<String> kinesisStream = env.addSource(new FlinkKinesisConsumer<>(
+            parameterTool.getRequired("input-stream-name"),
+            new SimpleStringSchema(),
+            parameterTool.getProperties()
+        ));
+
+        // Define the schema and parse JSON
+        SingleOutputStreamOperator<YourCustomObject> parsedStream = kinesisStream
+            .map(jsonStr -> new Gson().fromJson(jsonStr, YourCustomObject.class))
+            .filter(obj -> obj.getTransactionId() != null);
+
+        // Aggregate data
+        SingleOutputStreamOperator<AggregatedObject> aggregatedStream = parsedStream
+            .keyBy("transactionId")
+            .timeWindow(Time.minutes(1))
+            .aggregate(new AggregateFunction<YourCustomObject, AggregatedObject, AggregatedObject>() {
+                // Implement your aggregation logic here
+            });
+
+        // Write to S3
+        FlinkKinesisProducer<AggregatedObject> kinesisProducer = new FlinkKinesisProducer<>(
+            new YourCustomSerializationSchema(),
+            parameterTool.getProperties()
+        );
+        kinesisProducer.setDefaultStream(parameterTool.getRequired("output-stream-name"));
+        kinesisProducer.setDefaultPartition("0");
+
+        aggregatedStream.addSink(kinesisProducer);
+
+        env.execute("Kinesis to S3 Flink Job");
+    }
+}
+
+
+
+
+Scalability:
+
+For Spark: Adjust the number of executors and the instance types in your EMR cluster.
+For Flink: Adjust the number of task managers and their memory configuration.
+Fault Tolerance:
+
+Spark: Use Spark's built-in checkpointing.
+Flink: Enable checkpointing and configure state backends (e.g., RocksDB, S3) for state persistence.
+
+
+Schema Evolution: Implement strategies to handle changes in the data schema over time.
+Data Quality: Add validation checks to ensure data integrity before processing.
+Security: Use IAM roles and policies to securely manage access to Kinesis, S3, and EMR.
+This pipeline provides a robust solution for processing real-time data from Kinesis using both Spark and Flink on AWS EMR, with considerations for scalability and fault tolerance.
